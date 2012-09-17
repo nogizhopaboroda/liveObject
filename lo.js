@@ -4,6 +4,7 @@ var $LO = function (object, events) {
         this.__or = [];
 
         this._buildingMode = true;
+        this._redefineMode;
         var self = this;
 
         this._buildLiveObject = function (object, parent) {
@@ -36,6 +37,10 @@ var $LO = function (object, events) {
                                 },
                                 get: function () {
 
+                                    if(self._redefineMode == true) {
+                                        return id;
+                                    }
+
                                     if(self._buildingMode == true) {
                                         console.log('building mode');
                                         //return id;
@@ -66,6 +71,11 @@ var $LO = function (object, events) {
 
                             (function (that) {
                                 that.push = function (value) {
+
+                                    if (self.__commonHandlers && self.__commonHandlers['onPush']) {
+                                        self.__commonHandlers['onPush'].call(parent, value, "push");
+                                    }
+
                                     if(typeof value == "object") {
 
                                         that[that.length] = {};
@@ -90,11 +100,28 @@ var $LO = function (object, events) {
                                             });
                                         })(self._id);
                                         self._id++;
-
                                     }
-                                }
-                            })(parent[part]);
+                                };
 
+                                that.delete = function (index) {
+                                    self._redefineMode = true;
+                                    var _fieldIndex = that[index];
+                                    self._redefineMode = false;
+
+                                    if (self.__commonHandlers && self.__commonHandlers['onDelete']) {
+                                        self.__commonHandlers['onDelete'].call(parent, index, "delete", (self.__or[ _fieldIndex ] ? self.__or[ _fieldIndex ] : undefined) );
+                                    }
+
+                                    self.__or[ _fieldIndex ] = null;
+
+                                    that.splice(index, index + 1);
+                                    /* or
+                                    *  delete that[index];
+                                    *  that.length--;
+                                    *  if need should redefine splice();
+                                    * */
+                                 };
+                            })(parent[part]);
                         }
 
                         this._buildLiveObject(object[part], parent[part]);
@@ -146,7 +173,6 @@ $LO.computed = function (f) {
 };
 
 $LO.eventable = function (value, handlers) {
-
     var _eventable = function () {};
         _eventable.eventable = true;
         _eventable.value = value;

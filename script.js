@@ -49,5 +49,13 @@ var a = $LO({"test": "test",
                 },
                 "onGet": function (value, eventType, dataField) {
                      console.log('common get handler. value: ' + value);
+                },
+                "onPush": function (value, eventType) {
+                    console.log("common push handler. value: " + value);
+                    console.log(this);
+                },
+                "onDelete": function (numder, eventType, dataField) {
+                    console.log("common delete handler");
+                    console.log(this);
                 }
              });
