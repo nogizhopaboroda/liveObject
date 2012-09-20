@@ -64,8 +64,10 @@ var $LO = function (object, events) {
 
                         this._id++;
                     }
-                    if(typeof object[part] == "object") {
+                    if(typeof object[part] == "object" && object[part] != null) {
                         parent[part] = object[part];
+
+                        this._buildLiveObject(object[part], parent[part]);
 
                         if(this._getType(object[part]) == "array") {
 
@@ -122,13 +124,25 @@ var $LO = function (object, events) {
                                     * */
                                  };
                             })(parent[part]);
+                        } else {
+                            parent[part].extends = function (object) {
+                                //add handling
+                                if(self._getType(object) == "object") {
+                                    for(var pt in object) {
+                                        this[pt] = object[pt];
+                                        //setters and getters
+                                    }
+                                } else {
+                                    throw new Error("must be an object");
+                                }
+                            };
+                            Object.defineProperty(parent[part], "extends", { enumerable: false });
                         }
-
-                        this._buildLiveObject(object[part], parent[part]);
 
                         parent[part].parent = function () {
                             return parent;
                         };
+                        Object.defineProperty(parent[part], "parent", { enumerable: false });
                     }
                 }
             } else {
@@ -150,9 +164,9 @@ var $LO = function (object, events) {
             return typeof variable;
 		};
 
-        this.attachEvent = function (object, eventType, handler) {
+        /*this.attachEvent = function (object, eventType, handler) {
             return object;
-        };
+        };*/
 
         this._buildLiveObject(obj, this);
         this._buildingMode = false;
@@ -178,4 +192,8 @@ $LO.eventable = function (value, handlers) {
         _eventable.value = value;
         _eventable.handlers = handlers;
     return _eventable;
+};
+
+$LO.addEventListener = function (object, parent, eventType, handler) {
+
 };
