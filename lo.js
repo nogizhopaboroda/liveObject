@@ -11,7 +11,7 @@ var $LO = function (object, events) {
             if(typeof object == "object") {
                 for(var part in object) {
 
-                    if (typeof object[part] != "object") {
+                    if (typeof object[part] != "object" || object[part] == null) {
                         this.__or[this._id] = {};
 
                         if(object[part].eventable) {
