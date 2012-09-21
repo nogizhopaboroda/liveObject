@@ -11,10 +11,10 @@ var $LO = function (object, events) {
             if(typeof object == "object") {
                 for(var part in object) {
 
-                    if (typeof object[part] != "object") {
+                    if (typeof object[part] != "object" || object[part] == null) {
                         this.__or[this._id] = {};
 
-                        if(object[part].eventable) {
+                        if(object[part] && object[part].eventable) {
                             this.__or[this._id].value = object[part].value;
                             this.__or[this._id].type = this._getType(object[part].value);
                             this.__or[this._id].handlers = object[part].handlers
@@ -43,7 +43,7 @@ var $LO = function (object, events) {
 
                                     if(self._buildingMode == true) {
                                         console.log('building mode');
-                                        //return id;
+                                        return id;
                                     } else {
 
                                         if(that.__or[id].handlers && that.__or[id].handlers['onGet']) {
@@ -52,12 +52,22 @@ var $LO = function (object, events) {
                                             that.__commonHandlers['onGet'].call(parent, that.__or[id].value, "get", that.__or[id]);
                                         }
 
-                                        console.log('get event');
+                                        //console.log('get event');
                                         if(that.__or[id].type == "computed") {
                                             return that.__or[id].value.call(parent, that, that.__or[id]);
                                         }
                                     }
-                                    return that.__or[id].value;
+
+                                    var _value = new Object(that.__or[id].value);
+                                    Object.defineProperty(_value, "__id", { value: id});
+                                    Object.defineProperty(_value, "parent", { value: function () { return parent; } });
+                                    Object.defineProperty(_value, "addEventListener", {
+                                        value: function (eventType, handler) {
+                                            if(!that.__or[id].handlers) that.__or[id].handlers = {};
+                                            that.__or[id].handlers[eventType] = handler;
+                                        }
+                                    });
+                                    return _value;
                                 }
                             });
                         })(this._id, this);
