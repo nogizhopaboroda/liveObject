@@ -4,7 +4,6 @@ var $LO = function (object, events) {
         this.__or = [];
 
         this._buildingMode = true;
-        this._redefineMode;
         var self = this;
 
         this._buildLiveObject = function (object, parent) {
@@ -37,10 +36,6 @@ var $LO = function (object, events) {
                                 },
                                 get: function () {
 
-                                    if(self._redefineMode == true) {
-                                        return id;
-                                    }
-
                                     if(self._buildingMode == true) {
                                         console.log('building mode');
                                         return id;
@@ -52,7 +47,6 @@ var $LO = function (object, events) {
                                             that.__commonHandlers['onGet'].call(parent, that.__or[id].value, "get", that.__or[id]);
                                         }
 
-                                        //console.log('get event');
                                         if(that.__or[id].type == "computed") {
                                             return that.__or[id].value.call(parent, that, that.__or[id]);
                                         }
@@ -116,9 +110,8 @@ var $LO = function (object, events) {
                                 };
 
                                 that.delete = function (index) {
-                                    self._redefineMode = true;
-                                    var _fieldIndex = that[index];
-                                    self._redefineMode = false;
+
+                                    var _fieldIndex = that[index].__id;
 
                                     if (self.__commonHandlers && self.__commonHandlers['onDelete']) {
                                         self.__commonHandlers['onDelete'].call(parent, index, "delete", (self.__or[ _fieldIndex ] ? self.__or[ _fieldIndex ] : undefined) );
