@@ -31,6 +31,7 @@ var $LO = function (object, events) {
             if(typeof variable === "function") {
                 if(variable.computed === true) return "computed";
                 if(variable.eventable === true) return "eventable";
+                if(variable.binded === true) return "binded";
                 return "funtion";
             }
             return typeof variable;
