@@ -1,5 +1,6 @@
 var $LO = function (object, events) {
 	var liveObject = function (obj) {
+
         this._id = 0;
         this.__evolvent = [];
 
@@ -10,7 +11,7 @@ var $LO = function (object, events) {
             if(typeof object == "object") {
                 for(var part in object) {
                     var _type =  this._getType(object[part]);
-                    this.factories[ (this.factories[_type]) ? _type : "default" ](object[part], parent, part, this._id);
+                    this.factories[ (this.factories[_type]) ? _type : "default" ](object[part], parent, part, this._id, this);
                 }
             } else {
                 throw new Error("can't be a string");
@@ -29,15 +30,16 @@ var $LO = function (object, events) {
             }
             if(typeof variable === "boolean") return "bool";
             if(typeof variable === "function") {
-                if(variable.computed === true) return "computed";
+                /*if(variable.computed === true) return "computed";
                 if(variable.eventable === true) return "eventable";
-                if(variable.binded === true) return "binded";
+                if(variable.binded === true) return "binded";*/
+                if(variable.type) return variable.type;
                 return "funtion";
             }
             return typeof variable;
 		};
 
-        this.pushToEvolvent = function (data, type, id) {
+        this.pushToEvolvent = function (data, type, id) {  //выпилить id - делать через self._id
             self.__evolvent[id] = {};
             self.__evolvent[id].value = data;
             self.__evolvent[id].type  = type;
@@ -79,19 +81,6 @@ var $LO = function (object, events) {
                     "configurable": true
                 });
             },
-            "computed": function (objectPart, parent, partName, id) {
-
-                self.pushToEvolvent(objectPart, "computed", id);
-
-                Object.defineProperty(parent, partName, {
-                    set: function (newValue) {
-                        self.__evolvent[id].value = newValue;
-                    },
-                    get: function () {
-                        return self.__evolvent[id].value.call(parent, self, self.__evolvent[id]);
-                    }
-                });
-            },
             "array": function (objectPart, parent, partName, id) {
                 parent[partName] = objectPart;
                 self._buildLiveObject(objectPart, parent[partName]);
@@ -101,11 +90,6 @@ var $LO = function (object, events) {
                 parent[partName] = objectPart;
                 self._buildLiveObject(objectPart, parent[partName]);
                 self.decorate['object'](parent[partName], parent);
-            },
-            "eventable": function (objectPart, parent, partName, id) {
-                var _type =  self._getType(objectPart.value);
-                self.factories[ (self.factories[_type]) ? _type : "default" ](objectPart.value, parent, partName, id);
-                self.__evolvent[id].handlers = objectPart.handlers;
             }
 
             /* не используемые на данный момент фабрики
@@ -203,6 +187,13 @@ var $LO = function (object, events) {
             }
         };
 
+        for(var factory in $LO.core.factories) {
+            this.factories[factory] = $LO.core.factories[factory];
+        }
+        for(var decorator in $LO.core.decorators) {
+            this.decorate[decorator] = $LO.core.decorate[decorator];
+        }
+
         this._buildLiveObject(obj, this);
         this._buildingMode = false;
 	};
@@ -213,18 +204,44 @@ var $LO = function (object, events) {
         for(var event in events)
         __lo.__commonHandlers = events;
     }
+
 	return __lo;
 };
 
+$LO.core = {};
+$LO.core.factories = {};
+$LO.core.decorators = {};
+
+
 $LO.computed = function (f) {
-    f.computed = true;
+    f.type = "computed";
     return f;
+};
+
+$LO.core.factories["computed"] = function (objectPart, parent, partName, id, self) {
+
+    self.pushToEvolvent(objectPart, "computed", id);
+
+    Object.defineProperty(parent, partName, {
+        set: function (newValue) {
+            self.__evolvent[id].value = newValue;
+        },
+        get: function () {
+            return self.__evolvent[id].value.call(parent, self, self.__evolvent[id]);
+        }
+    });
 };
 
 $LO.eventable = function (value, handlers) {
     var _eventable = function () {};
-        _eventable.eventable = true;
+        _eventable.type = "eventable";
         _eventable.value = value;
         _eventable.handlers = handlers;
     return _eventable;
+};
+
+$LO.core.factories["eventable"] = function (objectPart, parent, partName, id, self) {
+    var _type =  self._getType(objectPart.value);
+    self.factories[ (self.factories[_type]) ? _type : "default" ](objectPart.value, parent, partName, id, self);
+    self.__evolvent[id].handlers = objectPart.handlers;
 };
