@@ -14,7 +14,7 @@ var $LO = function (object, events) {
                     this.factories[ (this.factories[_type]) ? _type : "default" ](object[part], parent, part, this._id, this);
                 }
             } else {
-                throw new Error("can't be a string");
+                throw new Error("must be an object");
             }
         };
 
@@ -30,9 +30,6 @@ var $LO = function (object, events) {
             }
             if(typeof variable === "boolean") return "bool";
             if(typeof variable === "function") {
-                /*if(variable.computed === true) return "computed";
-                if(variable.eventable === true) return "eventable";
-                if(variable.binded === true) return "binded";*/
                 if(variable.type) return variable.type;
                 return "funtion";
             }
@@ -56,7 +53,9 @@ var $LO = function (object, events) {
                     set: function (newValue) {
 
                         if(self.__evolvent[id].handlers && self.__evolvent[id].handlers['onSet']) {
-                            self.__evolvent[id].handlers['onSet'].call(parent, newValue, parent, "set", self.__evolvent[id]);
+                            for(var i = 0; i < self.__evolvent[id].handlers['onSet'].length; i++) {
+                                self.__evolvent[id].handlers['onSet'][i].call(parent, newValue, parent, "set", self.__evolvent[id]);
+                            }
                         } else if (self.__commonHandlers && self.__commonHandlers['onSet']) {
                             self.__commonHandlers['onSet'].call(parent, newValue, parent, "set", self.__evolvent[id]);
                         }
@@ -66,7 +65,9 @@ var $LO = function (object, events) {
                     get: function () {
 
                         if(self.__evolvent[id].handlers && self.__evolvent[id].handlers['onGet']) {
-                            self.__evolvent[id].handlers['onGet'].call(parent, self.__evolvent[id].value, "get", self.__evolvent[id]);
+                            for(var i = 0; i < self.__evolvent[id].handlers['onGet'].length; i++) {
+                                self.__evolvent[id].handlers['onGet'][i].call(parent, self.__evolvent[id].value, "get", self.__evolvent[id]);
+                            }
                         } else if (self.__commonHandlers && self.__commonHandlers['onGet']) {
                             self.__commonHandlers['onGet'].call(parent, self.__evolvent[id].value, "get", self.__evolvent[id]);
                         }
@@ -91,29 +92,6 @@ var $LO = function (object, events) {
                 self._buildLiveObject(objectPart, parent[partName]);
                 self.decorate['object'](parent[partName], parent);
             }
-
-            /* не используемые на данный момент фабрики
-            "null": function () {
-                console.log('null');
-            },
-            "bool": function () {
-                console.log('bool');
-            },
-            "date": function () {
-                console.log('bool');
-            },
-            "string": function () {
-                console.log('string');
-            },
-            "int": function () {
-                console.log('int');
-            },
-            "float": function () {
-                console.log('float');
-            },
-            "function": function () {
-                console.log('array');
-            },*/
         };
 
         this.decorate = {
@@ -174,7 +152,8 @@ var $LO = function (object, events) {
                 Object.defineProperty(value, "addEventListener", {
                     value: function (eventType, handler) {
                         if(!self.__evolvent[id].handlers) self.__evolvent[id].handlers = {};
-                        self.__evolvent[id].handlers[eventType] = handler;
+                        if(!self.__evolvent[id].handlers[eventType]) self.__evolvent[id].handlers[eventType] = [];
+                        self.__evolvent[id].handlers[eventType].push(handler);
                     }
                 });
                 Object.defineProperty(value, "remove", {
@@ -201,7 +180,6 @@ var $LO = function (object, events) {
     var __lo = new liveObject(object);
 
     if(events !== undefined) {
-        for(var event in events)
         __lo.__commonHandlers = events;
     }
 
@@ -243,5 +221,16 @@ $LO.eventable = function (value, handlers) {
 $LO.core.factories["eventable"] = function (objectPart, parent, partName, id, self) {
     var _type =  self._getType(objectPart.value);
     self.factories[ (self.factories[_type]) ? _type : "default" ](objectPart.value, parent, partName, id, self);
-    self.__evolvent[id].handlers = objectPart.handlers;
+    self.__evolvent[id].handlers = {};
+    for(var type in objectPart.handlers) {
+        self.__evolvent[id].handlers[type] = [];
+        if(typeof objectPart.handlers[type] === "function") {
+            self.__evolvent[id].handlers[type][0] = objectPart.handlers[type];
+        } else {
+            for(var i = 0; i < objectPart.handlers[type].length; i++) {
+                self.__evolvent[id].handlers[type][i] = objectPart.handlers[type][i];
+            }
+        }
+    }
 };
+
