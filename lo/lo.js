@@ -90,7 +90,7 @@ var $LO = function (object, events) {
 
                         for(var dec in $LO.core.defaultGetterDecorators) {
                             var types = $LO.core.defaultGetterDecorators[dec].types || "all";
-                            console.log(self._getType(self.__evolvent[id].value));
+                            //console.log(self._getType(self.__evolvent[id].value));
                             if(types == "all" || types.indexOf(self._getType(self.__evolvent[id].value)) != -1) {
                                 Object.defineProperty(_value, dec, {
                                     value: $LO.core.defaultGetterDecorators[dec].decorate,
@@ -103,16 +103,19 @@ var $LO = function (object, events) {
                     },
                     "configurable": true
                 });
+                return parent[partName];
             },
             "array": function (objectPart, parent, partName) {
                 parent[partName] = objectPart;
                 self._buildLiveObject(objectPart, parent[partName]);
                 self.decorate['array'](parent[partName]);
+                return parent[partName];
             },
             "object": function (objectPart, parent, partName) {
                 parent[partName] = objectPart;
                 self._buildLiveObject(objectPart, parent[partName]);
                 self.decorate['object'](parent[partName], parent);
+                return parent[partName];
             }
         };
 
